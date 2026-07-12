@@ -10,6 +10,7 @@
 
 import { createLogger } from "../logging/logger.js";
 import { getAllowedSites } from "./settings.js";
+import { IS_STORE_BUILD } from "../build_flags.js";
 
 const log = createLogger("background.script_registry");
 
@@ -44,6 +45,20 @@ async function hasOriginPermission(domain: string): Promise<boolean> {
  * @returns 동기화 후 등록된 도메인 수
  */
 export async function syncContentScripts(): Promise<number> {
+  // pilot 빌드: <all_urls> 정적 주입을 쓰므로 동적 등록은 전부 해제한다.
+  // (같은 unpacked 폴더에 store↔pilot 빌드를 덮어쓰면 extension ID가 같아
+  //  이전 동적 등록이 살아남고, 정적 주입과 겹쳐 이벤트가 이중 기록될 수 있음)
+  if (!IS_STORE_BUILD) {
+    const stale = (await chrome.scripting.getRegisteredContentScripts())
+      .map((r) => r.id)
+      .filter((id) => id.startsWith(SCRIPT_ID_PREFIX));
+    if (stale.length > 0) {
+      log.info("pilot_cleanup", `동적 등록 ${stale.length}건 해제 (정적 주입과 중복 방지)`);
+      await chrome.scripting.unregisterContentScripts({ ids: stale });
+    }
+    return 0;
+  }
+
   // 단계 1: 원하는 상태 계산 (enabled + permission granted)
   const sites = await getAllowedSites();
   const desired = new Map<string, string>(); // scriptId -> domain

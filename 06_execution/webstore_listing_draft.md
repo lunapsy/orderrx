@@ -3,6 +3,10 @@
 제출 시 개발자 대시보드 폼에 붙여 넣을 초안. `09_checklists/chrome_submission_checklist.md` 기준으로 작성.
 공개 범위는 **"일반 공개 안 함(Unlisted)"** — 링크를 아는 참여자만 설치, 자동 업데이트 제공.
 
+> **제출용 빌드는 반드시 store 채널로**: `pnpm ext:build:store` 실행 후 `apps/extension/dist/` 를
+> zip으로 압축(`*.map` 제외)해서 업로드. 기본 빌드(`pnpm ext:build`)는 zip 직접 배포용 pilot 채널로,
+> `<all_urls>` 정적 주입이 포함되어 있어 그대로 제출하면 반려된다. 채널 상세: `apps/extension/vite.config.ts`.
+
 ---
 
 ## 기본 정보

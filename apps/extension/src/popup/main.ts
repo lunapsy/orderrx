@@ -14,6 +14,7 @@ import {
   MAX_ALLOWED_SITES,
 } from "../background/settings.js";
 import { originsForDomain } from "../background/script_registry.js";
+import { IS_STORE_BUILD } from "../build_flags.js";
 import { countEvents, getAllEvents, clearEvents } from "../storage/indexed_db.js";
 import type { AllowedSite } from "../storage/chrome_storage.js";
 import {
@@ -130,11 +131,13 @@ async function renderUploadLog(): Promise<void> {
 
 /**
  * 도메인들의 host permission을 요청한다 (반드시 사용자 제스처 컨텍스트에서 호출).
- * 0.3.0부터 content script는 허가된 도메인에만 동적 주입되므로,
+ * store 빌드 전용: content script가 허가된 도메인에만 동적 주입되므로
  * 권한이 거부되면 해당 도메인에서는 수집이 불가능하다.
+ * pilot 빌드는 <all_urls> 정적 주입이라 권한 프롬프트 없이 항상 true.
  * @returns granted 여부
  */
 async function requestSitePermissions(domains: string[]): Promise<boolean> {
+  if (!IS_STORE_BUILD) return true; // pilot: 프롬프트 없음
   const origins = domains.flatMap((d) => originsForDomain(d));
   try {
     const granted = await chrome.permissions.request({ origins });
