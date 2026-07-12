@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/events/submit.schema.json",
+  "title": "SubmitEvent",
+  "description": "form 제출 이벤트.",
+  "allOf": [
+    { "$ref": "../event_base.schema.json" },
+    {
+      "type": "object",
+      "required": [
+        "event_type",
+        "form_selector",
+        "form_action_domain",
+        "field_count",
+        "field_names_redacted",
+        "submit_trigger"
+      ],
+      "properties": {
+        "event_type": { "const": "submit" },
+        "form_selector": { "type": "string" },
+        "form_action_domain": {
+          "type": "string",
+          "description": "form action의 host만. path는 저장 금지."
+        },
+        "field_count": { "type": "integer", "minimum": 0 },
+        "field_names_redacted": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "민감 패턴 매치 항목은 '[REDACTED]'."
+        },
+        "submit_trigger": {
+          "type": "string",
+          "enum": ["button_click", "enter_key", "programmatic"]
+        }
+      }
+    }
+  ]
+}

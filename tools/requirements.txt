@@ -1,0 +1,8 @@
+# OrderRx tools/ Python 의존성
+# 설치: pip install -r tools/requirements.txt --break-system-packages (또는 venv 권장)
+
+# schema 타입 자동 생성 (pydantic v2 모델)
+datamodel-code-generator>=0.26.0
+
+# 테스트
+pytest>=8.0

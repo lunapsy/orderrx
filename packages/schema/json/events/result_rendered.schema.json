@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/events/result_rendered.schema.json",
+  "title": "ResultRenderedEvent",
+  "description": "검색 결과 / 상품 리스트 / 에러 메시지 렌더링 감지. M1은 heuristic 기반 MutationObserver.",
+  "allOf": [
+    { "$ref": "../event_base.schema.json" },
+    {
+      "type": "object",
+      "required": [
+        "event_type",
+        "container_selector",
+        "item_count",
+        "result_type_guess",
+        "render_duration_ms"
+      ],
+      "properties": {
+        "event_type": { "const": "result_rendered" },
+        "container_selector": { "type": "string" },
+        "item_count": { "type": "integer", "minimum": 0 },
+        "result_type_guess": {
+          "type": "string",
+          "enum": ["search_results", "product_list", "error_message", "stock_info", "other"]
+        },
+        "render_duration_ms": { "type": "number", "minimum": 0 }
+      }
+    }
+  ]
+}

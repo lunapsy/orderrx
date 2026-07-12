@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/events/click.schema.json",
+  "title": "ClickEvent",
+  "description": "허용 도메인 내 마우스 클릭. 좌표는 저장하지 않는다.",
+  "allOf": [
+    { "$ref": "../event_base.schema.json" },
+    {
+      "type": "object",
+      "required": [
+        "event_type",
+        "target_selector",
+        "target_tag",
+        "target_role",
+        "target_text_redacted",
+        "target_href_canonical",
+        "modifier_keys"
+      ],
+      "properties": {
+        "event_type": { "const": "click" },
+        "target_selector": { "type": "string" },
+        "target_tag": { "type": "string" },
+        "target_role": { "type": ["string", "null"] },
+        "target_text_redacted": { "type": "string", "maxLength": 40 },
+        "target_href_canonical": { "type": ["string", "null"] },
+        "modifier_keys": {
+          "type": "object",
+          "required": ["ctrl", "shift", "alt", "meta"],
+          "properties": {
+            "ctrl": { "type": "boolean" },
+            "shift": { "type": "boolean" },
+            "alt": { "type": "boolean" },
+            "meta": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

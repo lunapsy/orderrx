@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/event_base.schema.json",
+  "title": "EventBase",
+  "description": "모든 이벤트가 공유하는 공통 필드. 상세는 03_architecture/event_schema_m1_detail.md 참조.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "session_id",
+    "participant_id",
+    "site_id",
+    "page_type",
+    "event_type",
+    "event_time",
+    "upload_status",
+    "redaction_status",
+    "url_canonical",
+    "viewport",
+    "dom_ready",
+    "sequence_number"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["0.1.0"],
+      "description": "현재 M1 버전 고정."
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "이벤트 고유 ID (UUID v4)."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "브라우저 세션 단위 rotating pseudonymous ID."
+    },
+    "participant_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "설치 시 생성된 참여자 ID (UUID v4)."
+    },
+    "site_id": {
+      "type": "string",
+      "description": "등록된 도메인. M1은 원문 도메인 허용, M2에서 해시화 재검토."
+    },
+    "page_type": {
+      "type": "string",
+      "enum": ["login", "search", "product_detail", "cart", "order", "unknown"],
+      "description": "페이지 유형. M1 기본값은 unknown."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "page_enter",
+        "click",
+        "field_focus",
+        "submit",
+        "navigate",
+        "result_rendered"
+      ],
+      "description": "M1 이벤트 6종."
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "클라이언트 기준 ISO 8601."
+    },
+    "upload_status": {
+      "type": "string",
+      "enum": ["local_only"],
+      "description": "M1은 항상 local_only."
+    },
+    "redaction_status": {
+      "type": "string",
+      "enum": ["clean", "redacted", "blocked"],
+      "description": "clean: 치환 없음. redacted: 패턴 치환 발생. blocked: 민감 필드 자체 차단."
+    },
+    "url_canonical": {
+      "type": "string",
+      "description": "fragment 제거 및 블랙리스트 파라미터 필터링이 적용된 URL."
+    },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 0 },
+        "height": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "dom_ready": {
+      "type": "boolean",
+      "description": "이벤트 발생 시점의 document.readyState === 'complete' 여부."
+    },
+    "sequence_number": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "세션 내 단조 증가 번호."
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/events/page_enter.schema.json",
+  "title": "PageEnterEvent",
+  "description": "허용 도메인 페이지 로드 시 1회 발생. event_type === 'page_enter'.",
+  "allOf": [
+    { "$ref": "../event_base.schema.json" },
+    {
+      "type": "object",
+      "required": ["event_type", "page_title_redacted", "referrer_site_id", "load_duration_ms"],
+      "properties": {
+        "event_type": { "const": "page_enter" },
+        "page_title_redacted": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "redaction 패턴 적용 후 앞 80자."
+        },
+        "referrer_site_id": {
+          "type": ["string", "null"],
+          "description": "referrer가 다른 허용 도메인이면 해당 site_id, 아니면 null."
+        },
+        "load_duration_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "performance.timing 기반 근삿값."
+        }
+      }
+    }
+  ]
+}

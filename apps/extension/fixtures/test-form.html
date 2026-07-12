@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  역할: M1 extension smoke test 용 정적 HTML.
+  목적: 실제 약국 주문 사이트의 핵심 워크플로를 압축한 더미 페이지에서
+        page_enter / click / field_focus / submit / navigate / result_rendered
+        6종 이벤트가 모두 정상 수집되는지, 그리고 민감 필드가 차단되는지 확인.
+
+  사용법: fixtures/README.md 참조.
+  주의: 이 페이지의 모든 값은 더미. 실제 환자/카드/주민번호 입력 금지.
+-->
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>약국주문 - 타이레놀 검색</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+        max-width: 720px;
+        margin: 32px auto;
+        padding: 0 16px;
+        color: #222;
+      }
+      h1 { font-size: 20px; }
+      h2 { font-size: 16px; margin-top: 32px; border-top: 1px solid #ddd; padding-top: 16px; }
+      label { display: block; font-size: 13px; color: #555; margin-top: 8px; }
+      input, select, button {
+        font-size: 14px;
+        padding: 6px 8px;
+        margin-top: 4px;
+      }
+      input[type="text"], input[type="password"], input[type="email"], input[type="tel"], input[type="number"] {
+        width: 280px;
+      }
+      button { cursor: pointer; }
+      .result-list { background: #f7f7f7; padding: 8px; margin-top: 8px; }
+      .result-list li { padding: 4px 0; }
+      .nav { margin-top: 24px; font-size: 13px; }
+      .danger { color: #b00; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>OrderRx M1 Smoke Test</h1>
+    <p class="danger">
+      ⚠️ 더미 페이지입니다. 어떤 필드에도 실제 환자/카드/주민번호를 입력하지 마세요.
+    </p>
+
+    <!-- ============================================================
+         섹션 1: 상품 검색 (search workflow)
+         기대 이벤트: field_focus(q) → submit(search_form) → result_rendered
+         ============================================================ -->
+    <h2>1. 상품 검색</h2>
+    <form id="search_form" action="/search" method="get" onsubmit="return handleSearch(event)">
+      <label for="q">검색어</label>
+      <input type="text" id="q" name="q" placeholder="예: 타이레놀" autocomplete="off" />
+      <label for="cat">카테고리</label>
+      <select id="cat" name="cat">
+        <option value="all">전체</option>
+        <option value="analgesic">진통제</option>
+        <option value="cold">감기약</option>
+      </select>
+      <br />
+      <button type="submit" id="search_btn">검색</button>
+    </form>
+    <div id="search_results" class="result-list" aria-live="polite"></div>
+
+    <!-- ============================================================
+         섹션 2: 로그인 (sensitive workflow — password 차단 검증)
+         기대: field_focus(username)=clean, field_focus(password)=blocked
+         ============================================================ -->
+    <h2>2. 로그인 (민감 필드 차단 검증)</h2>
+    <form id="login_form" action="/login" method="post" onsubmit="event.preventDefault(); alert('login submit (dummy)');">
+      <label for="username">아이디</label>
+      <input type="text" id="username" name="username" autocomplete="username" />
+      <label for="user_password">비밀번호</label>
+      <input type="password" id="user_password" name="user_password" autocomplete="current-password" />
+      <br />
+      <button type="submit">로그인</button>
+    </form>
+
+    <!-- ============================================================
+         섹션 3: 주문 폼 (mixed workflow)
+         일반 필드(product, quantity)는 clean, 민감 필드(phone, card, rrn)는 blocked.
+         ============================================================ -->
+    <h2>3. 주문 폼 (혼합)</h2>
+    <form id="order_form" action="/order" method="post" onsubmit="event.preventDefault(); renderOrderResult();">
+      <label for="product_id">상품 ID</label>
+      <input type="text" id="product_id" name="product_id" value="12345" />
+
+      <label for="quantity">수량</label>
+      <input type="number" id="quantity" name="quantity" value="1" min="1" />
+
+      <label for="patient_name">환자 이름</label>
+      <input type="text" id="patient_name" name="patient_name" placeholder="더미값 입력" />
+
+      <label for="phone">연락처</label>
+      <input type="tel" id="phone" name="phone" placeholder="01012345678" autocomplete="tel" />
+
+      <label for="card_number">카드번호</label>
+      <input type="text" id="card_number" name="card_number" placeholder="0000-0000-0000-0000" autocomplete="cc-number" />
+
+      <label for="jumin">주민번호 (테스트용)</label>
+      <input type="text" id="jumin" name="jumin" placeholder="000000-0000000" />
+
+      <br />
+      <button type="submit">주문하기</button>
+    </form>
+    <div id="order_result" class="result-list" aria-live="polite"></div>
+
+    <!-- ============================================================
+         섹션 4: 네비게이션 (navigate event 검증)
+         ============================================================ -->
+    <div class="nav">
+      4. 다른 페이지로:
+      <a href="./test-form.html?from=order&jsessionid=ABCDEF123&phone=01012345678#anchor">
+        같은 페이지 재방문 (URL 정규화 검증)
+      </a>
+    </div>
+
+    <script>
+      // ----------------------------------------------------------------
+      // 역할: 검색 버튼 클릭 시 setTimeout으로 결과 DOM을 동적 추가.
+      //       MutationObserver 가 result_rendered 이벤트를 잡는지 확인.
+      // ----------------------------------------------------------------
+      function handleSearch(ev) {
+        ev.preventDefault();
+        const list = document.getElementById("search_results");
+        list.innerHTML = "<div>검색 중...</div>";
+        setTimeout(function () {
+          // class 에 "result" 와 "list" 를 둘 다 포함시켜
+          // content/capture.ts 의 result_rendered heuristic selector 에 매칭되도록 한다.
+          list.innerHTML =
+            '<ul class="search-result-list">' +
+            '<li>타이레놀 정 500mg / 10정 / 3,200원</li>' +
+            '<li>타이레놀 ER 650mg / 24정 / 8,900원</li>' +
+            '<li>타이레놀 콜드-S / 12포 / 6,400원</li>' +
+            '</ul>';
+        }, 350);
+        return false;
+      }
+
+      // ----------------------------------------------------------------
+      // 역할: 주문 결과 동적 렌더 (result_rendered 추가 케이스).
+      // ----------------------------------------------------------------
+      function renderOrderResult() {
+        const box = document.getElementById("order_result");
+        box.innerHTML = "<div>주문 처리 중...</div>";
+        setTimeout(function () {
+          // 동일하게 heuristic selector 에 매칭되는 class 부여.
+          box.innerHTML =
+            '<ul class="order-result-list">' +
+            '<li>주문번호: ORD-' + Math.floor(Math.random() * 1e6) + '</li>' +
+            '<li>상태: 접수 완료 (더미)</li>' +
+            '</ul>';
+        }, 300);
+      }
+    </script>
+  </body>
+</html>

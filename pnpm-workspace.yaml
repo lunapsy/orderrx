@@ -1,0 +1,5 @@
+# pnpm workspace 정의
+# M1 범위: extension과 schema 두 패키지만. 나머지는 이후 마일스톤에서 추가.
+packages:
+  - "apps/extension"
+  - "packages/schema"

@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Generated schema types
+packages/schema/generated/ts/*.ts
+packages/schema/generated/python/*.py
+!packages/schema/generated/ts/.gitkeep
+!packages/schema/generated/python/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# User data exports (test fixtures only, real exports belong in user-controlled locations)
+/tools/exports/*.json
+!/tools/exports/.gitkeep
+
+# Private (never commit)
+.private/
+.omc/
+
+# Vite temp files
+*.timestamp-*.mjs

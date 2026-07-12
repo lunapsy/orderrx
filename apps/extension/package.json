@@ -1,0 +1,24 @@
+{
+  "name": "@orderrx/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OrderRx Training Track Chrome Extension. M1 범위: 다중 테스터용 학습 데이터 수집. 상세: 06_execution/solo_milestones.md",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@orderrx/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.25",
+    "@types/chrome": "^0.0.268",
+    "jsdom": "^24.1.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.3.0",
+    "vitest": "^1.6.0"
+  }
+}

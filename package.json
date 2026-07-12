@@ -1,0 +1,19 @@
+{
+  "name": "orderrx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OrderRx (PharmPilot) — Training Track workspace root. See docs in 01_master/ and 06_execution/solo_milestones.md.",
+  "scripts": {
+    "schema:gen": "pnpm --filter @orderrx/schema run gen",
+    "ext:dev": "pnpm --filter @orderrx/extension run dev",
+    "ext:build": "pnpm --filter @orderrx/extension run build",
+    "ext:test": "pnpm --filter @orderrx/extension run test"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

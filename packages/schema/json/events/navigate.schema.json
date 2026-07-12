@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://orderrx.local/schema/events/navigate.schema.json",
+  "title": "NavigateEvent",
+  "description": "SPA 내비게이션 또는 전체 페이지 이동.",
+  "allOf": [
+    { "$ref": "../event_base.schema.json" },
+    {
+      "type": "object",
+      "required": [
+        "event_type",
+        "from_url_canonical",
+        "to_url_canonical",
+        "navigation_type",
+        "trigger_event_id"
+      ],
+      "properties": {
+        "event_type": { "const": "navigate" },
+        "from_url_canonical": { "type": "string" },
+        "to_url_canonical": { "type": "string" },
+        "navigation_type": {
+          "type": "string",
+          "enum": ["link_click", "form_submit", "history", "reload", "unknown"]
+        },
+        "trigger_event_id": {
+          "type": ["string", "null"],
+          "description": "직전 click/submit 이벤트의 event_id."
+        }
+      }
+    }
+  ]
+}
