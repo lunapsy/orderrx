@@ -14,9 +14,26 @@ const log = createLogger("events.event_factory");
 
 const SCHEMA_VERSION = "0.1.0";
 
+/**
+ * 확장 빌드 버전 (manifest.json의 version).
+ * 다중 참여자 환경에서 어떤 빌드가 만든 데이터인지 구분하기 위해 모든 이벤트에 스탬프.
+ * 테스트(jsdom)처럼 chrome API가 없는 환경에서는 "unknown".
+ */
+const APP_VERSION: string = (() => {
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
+      return chrome.runtime.getManifest().version;
+    }
+  } catch {
+    // ignore — 아래 fallback
+  }
+  return "unknown";
+})();
+
 /** 모든 이벤트가 공유하는 공통 필드 */
 interface BaseEvent {
   schema_version: "0.1.0";
+  app_version: string;
   event_id: string;
   session_id: string;
   participant_id: string;
@@ -24,7 +41,7 @@ interface BaseEvent {
   page_type: "login" | "search" | "product_detail" | "cart" | "order" | "unknown";
   event_type: string;
   event_time: string;
-  upload_status: "local_only";
+  upload_status: "local_only" | "uploaded";
   redaction_status: "clean" | "redacted" | "blocked";
   url_canonical: string;
   viewport: { width: number; height: number };
@@ -52,6 +69,7 @@ function baseFields(
   const { session_id, sequence_number } = nextSequence();
   return {
     schema_version: SCHEMA_VERSION,
+    app_version: APP_VERSION,
     event_id: crypto.randomUUID(),
     session_id,
     participant_id: ctx.participant_id,

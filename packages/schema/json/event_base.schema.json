@@ -26,6 +26,10 @@
       "enum": ["0.1.0"],
       "description": "현재 M1 버전 고정."
     },
+    "app_version": {
+      "type": "string",
+      "description": "이벤트를 생성한 확장 빌드 버전 (manifest version). 구버전 데이터에는 없을 수 있어 optional."
+    },
     "event_id": {
       "type": "string",
       "format": "uuid",
@@ -68,8 +72,8 @@
     },
     "upload_status": {
       "type": "string",
-      "enum": ["local_only"],
-      "description": "M1은 항상 local_only."
+      "enum": ["local_only", "uploaded"],
+      "description": "생성 시 local_only. 서버 업로드 성공 시 uploaded (M1.5 자동 수집)."
     },
     "redaction_status": {
       "type": "string",

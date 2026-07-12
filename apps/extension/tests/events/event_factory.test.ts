@@ -61,6 +61,9 @@ describe("createPageEnterEvent", () => {
     const ev = createPageEnterEvent(CTX, null);
     expect(ev.event_type).toBe("page_enter");
     expect(ev.schema_version).toBe("0.1.0");
+    // app_version은 항상 존재해야 함. chrome API가 없는 테스트 환경에서는 "unknown".
+    expect(typeof ev.app_version).toBe("string");
+    expect((ev.app_version as string).length).toBeGreaterThan(0);
     expect(ev.participant_id).toBe(CTX.participant_id);
     expect(ev.url_canonical).toContain("example-pharm.co.kr");
     expectNoForbidden(ev);

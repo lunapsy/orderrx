@@ -66,13 +66,15 @@ function subscribeStorageChanges(): void {
       if (area !== "local") return;
       const consentChanged = Boolean(changes[KEY.CONSENT_STATE]);
       const sitesChanged = Boolean(changes[KEY.ALLOWED_SITES]);
-      if (!consentChanged && !sitesChanged) return;
-      const reason =
-        consentChanged && sitesChanged
-          ? "consent+sites"
-          : consentChanged
-            ? "consent"
-            : "sites";
+      // 동의 기록 변경(최초 동의, 재동의, 철회)도 즉시 재평가 대상
+      const recordChanged = Boolean(changes[KEY.CONSENT_RECORD]);
+      if (!consentChanged && !sitesChanged && !recordChanged) return;
+      const parts = [
+        consentChanged ? "consent" : null,
+        sitesChanged ? "sites" : null,
+        recordChanged ? "consent_record" : null,
+      ].filter(Boolean);
+      const reason = parts.join("+");
       log.info("storage_change", `${reason} 변경 감지 → 재평가`);
       void evaluate(`storage:${reason}`);
     });

@@ -1,6 +1,6 @@
 {
   "name": "@orderrx/extension",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "OrderRx Training Track Chrome Extension. M1 범위: 다중 테스터용 학습 데이터 수집. 상세: 06_execution/solo_milestones.md",
   "type": "module",

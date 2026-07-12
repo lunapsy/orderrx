@@ -9,12 +9,31 @@ const log = createLogger("storage.chrome_storage");
 export const KEY = {
   PARTICIPANT_ID: "participant_id",
   CONSENT_STATE: "consent_state",
+  CONSENT_RECORD: "consent_record",
   ALLOWED_SITES: "allowed_sites",
   INSTALLED_AT: "installed_at",
+  UPLOAD_LOG: "upload_log",
 } as const;
 
-/** consent 상태 */
+/** consent 상태 (수집 ON/OFF 토글) */
 export type ConsentState = "paused" | "active";
+
+/**
+ * 참여 동의 기록 (CONSENT.md 기반 명시적 동의).
+ * consent_state 토글과 별개 — 이 기록이 없으면 수집·업로드 자체가 차단된다.
+ */
+export interface ConsentRecord {
+  /** 동의한 동의서 문서 버전 (CONSENT.md의 문서 버전) */
+  consent_version: string;
+  /** 동의 시각 (ISO 8601) */
+  agreed_at: string;
+  /** 동의 시점의 확장 버전 */
+  app_version: string;
+  /** 동의한 참여자 ID */
+  participant_id: string;
+  /** 서버 consents 테이블 업로드 완료 여부 */
+  uploaded: boolean;
+}
 
 /** 도메인 등록 항목 */
 export interface AllowedSite {

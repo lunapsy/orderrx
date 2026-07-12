@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OrderRx Training Track",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "약국 주문 사이트 workflow 학습 데이터 수집 (참여자 동의 기반, 민감정보 차단, 로컬 저장).",
   "minimum_chrome_version": "116",
   "action": {
@@ -15,7 +15,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "alarms"
   ],
   "host_permissions": [],
   "optional_host_permissions": [
@@ -24,8 +25,12 @@
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/index.ts"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/index.ts"
+      ],
       "run_at": "document_idle",
       "all_frames": false
     }

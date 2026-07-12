@@ -7,7 +7,12 @@
 
 ## 현재 상태
 - Milestone 0 (Decisions only): **CLOSED** (2026-04-07)
-- Milestone 1 (Training Data Collection Extension): **IN PROGRESS**
+- Milestone 1 (Training Data Collection Extension): **DONE** — 0.1.0 첫 실배포 (2026-04-08)
+- Milestone 1.5 (동의 절차 + 자동 업로드): **DONE** — 0.2.0 (2026-07-13)
+  - popup 첫 실행 참여 동의 게이트 (`apps/extension/CONSENT.md` v1.0.0, 동의 기록 저장·서버 전송)
+  - 수집 이벤트 Supabase 자동 업로드(1분 주기) 후 로컬 자동 삭제 — 로컬 용량 문제 해소
+  - 서버는 anon INSERT-only RLS (참여자 단말에서 타인 데이터 조회 불가)
+  - 이벤트에 `app_version` 스탬프, 다중 참여자 병합 도구 `tools/merge_events.py`
 
 ## 디렉토리
 - `00_overview/` ~ `09_checklists/` — 문서팩 (single source of truth)

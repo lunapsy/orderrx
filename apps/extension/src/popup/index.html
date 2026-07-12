@@ -34,6 +34,24 @@
   <body>
     <h1>OrderRx Training Track</h1>
 
+    <!-- 참여 동의 게이트: 유효한 동의 기록이 없으면 이 섹션만 표시된다 -->
+    <section id="consent-gate" style="display: none">
+      <strong>참여 동의가 필요합니다</strong>
+      <div id="consent-summary" style="margin: 8px 0; max-height: 260px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 8px; font-size: 12px; line-height: 1.5;">
+        <p style="margin: 0 0 6px"><strong>수집하는 것</strong> — 참여자가 직접 등록한 사이트에서, 수집 활성화 상태일 때만: 페이지 방문·클릭·입력창 사용(길이만)·폼 제출·페이지 이동·결과 표시의 <em>행동 메타데이터 6종</em>.</p>
+        <p style="margin: 0 0 6px"><strong>수집하지 않는 것(자동 차단)</strong> — 비밀번호·OTP, 입력한 값의 원문, 결제 정보, 환자 개인정보, 주민번호, 전화번호·이메일, 세션 토큰.</p>
+        <p style="margin: 0 0 6px"><strong>전송</strong> — 수집된 이벤트는 운영자의 수집 서버(Supabase, 서울 리전)에 자동 업로드되며, 업로드 확인 후 브라우저에서 삭제됩니다.</p>
+        <p style="margin: 0 0 6px"><strong>참여자의 권리</strong> — 언제든 일시 정지, 사이트별 중단, 로컬 삭제, 참여 철회 및 서버 데이터 삭제 요청(7일 내 처리)이 가능합니다.</p>
+        <p style="margin: 0" class="muted">전문은 배포 시 함께 전달된 <code>CONSENT.md</code>(동의서 v1.0.0)를 참조하세요. 동의 시 동의 시각·동의서 버전·확장 버전이 기록됩니다.</p>
+      </div>
+      <label style="display: block; margin-bottom: 8px">
+        <input type="checkbox" id="consent-agree-check" />
+        위 내용을 읽고 이해했으며 동의합니다
+      </label>
+      <button id="consent-agree-btn" disabled>동의하고 시작</button>
+    </section>
+
+    <div id="main-ui" style="display: none">
     <section>
       <div class="muted">참여자 ID</div>
       <div id="pid">…</div>
@@ -64,7 +82,7 @@
     </section>
 
     <section>
-      <div>수집된 이벤트: <span id="event-count" class="count">0</span></div>
+      <div>업로드 대기 이벤트: <span id="event-count" class="count">0</span></div>
       <div id="recent-events" class="muted"></div>
       <div class="row" style="margin-top: 6px;">
         <button id="export-events-btn">내 데이터 내보내기</button>
@@ -73,11 +91,22 @@
     </section>
 
     <section>
+      <div>누적 업로드: <span id="upload-total" class="count">0</span>건</div>
+      <div id="upload-status" class="muted"></div>
+      <div id="upload-recent" class="muted"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="flush-upload-btn">지금 업로드</button>
+      </div>
+    </section>
+
+    <section>
       <div class="muted">
         민감정보(비밀번호, 카드, 주민번호, 전화번호, 이메일 등)는 자동으로 차단/마스킹되어
         저장되지 않습니다. 상세는 문서 <code>event_schema_m1_detail.md</code> 참조.
       </div>
+      <div class="muted" id="consent-info"></div>
     </section>
+    </div>
 
     <script type="module" src="./main.ts"></script>
   </body>

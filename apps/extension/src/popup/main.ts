@@ -14,6 +14,13 @@ import {
 } from "../background/settings.js";
 import { countEvents, getAllEvents, clearEvents } from "../storage/indexed_db.js";
 import type { AllowedSite } from "../storage/chrome_storage.js";
+import {
+  CONSENT_VERSION,
+  getConsentRecord,
+  hasValidConsent,
+  recordConsent,
+} from "../background/consent_record.js";
+import { getUploadLog } from "../background/uploader.js";
 
 const log = createLogger("popup.main");
 
@@ -97,6 +104,27 @@ async function renderEvents(): Promise<void> {
 }
 
 /**
+ * 업로드 로그 표시: 누적 업로드 수, 마지막 성공/오류, 최근 업로드 요약.
+ */
+async function renderUploadLog(): Promise<void> {
+  const uploadLog = await getUploadLog();
+  $("upload-total").textContent = String(uploadLog.uploaded_total);
+  const statusEl = $("upload-status");
+  if (uploadLog.last_error) {
+    statusEl.textContent = `마지막 시도 실패 — 데이터는 보존되며 1분 내 자동 재시도됩니다.`;
+    statusEl.classList.add("danger");
+  } else if (uploadLog.last_success_at) {
+    statusEl.textContent = `마지막 업로드: ${uploadLog.last_success_at.slice(0, 19).replace("T", " ")}`;
+    statusEl.classList.remove("danger");
+  } else {
+    statusEl.textContent = "아직 업로드된 데이터가 없습니다.";
+  }
+  $("upload-recent").innerHTML = uploadLog.recent
+    .map((e) => `<div>↑ ${e.event_type} @ ${e.event_time.slice(11, 19)} (${e.redaction_status})</div>`)
+    .join("");
+}
+
+/**
  * 도메인 목록 JSON 파일 다운로드.
  */
 function downloadJson(filename: string, data: unknown): void {
@@ -175,6 +203,55 @@ function bindEvents(): void {
     await clearEvents();
     await renderEvents();
   });
+
+  // 지금 업로드 (service worker에 위임 — 업로드 로직 단일 진입점 유지)
+  $("flush-upload-btn").addEventListener("click", async () => {
+    const btn = $("flush-upload-btn") as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = "업로드 중…";
+    try {
+      await chrome.runtime.sendMessage({ type: "flush_upload" });
+    } catch (err) {
+      log.error("flush_fail", "flush_upload 메시지 실패", err);
+    }
+    btn.disabled = false;
+    btn.textContent = "지금 업로드";
+    await Promise.all([renderEvents(), renderUploadLog()]);
+  });
+}
+
+/**
+ * 동의 게이트 렌더링.
+ * 유효한 동의 기록이 없으면 동의 섹션만 표시하고 본 UI를 숨긴다.
+ * 동의 완료 시 기록 저장 후 본 UI로 전환.
+ */
+async function renderConsentGate(): Promise<boolean> {
+  const agreed = await hasValidConsent();
+  $("consent-gate").style.display = agreed ? "none" : "block";
+  $("main-ui").style.display = agreed ? "block" : "none";
+  if (agreed) {
+    const record = await getConsentRecord();
+    if (record) {
+      $("consent-info").textContent =
+        `동의서 v${record.consent_version} — ${record.agreed_at.slice(0, 10)} 동의함`;
+    }
+    return true;
+  }
+
+  const check = $("consent-agree-check") as HTMLInputElement;
+  const btn = $("consent-agree-btn") as HTMLButtonElement;
+  check.addEventListener("change", () => {
+    btn.disabled = !check.checked;
+  });
+  btn.addEventListener("click", async () => {
+    if (!check.checked) return;
+    const record = await recordConsent();
+    log.info("consent_agreed", `version=${record.consent_version}`);
+    // popup 전체를 다시 로드해 본 UI 초기화(main)가 처음부터 실행되게 한다.
+    location.reload();
+  });
+  log.info("consent_gate", `동의 필요 (요구 버전=${CONSENT_VERSION})`);
+  return false;
 }
 
 /**
@@ -182,8 +259,19 @@ function bindEvents(): void {
  */
 async function main(): Promise<void> {
   log.info("boot", "popup 렌더 시작");
+  const agreed = await renderConsentGate();
+  if (!agreed) {
+    log.info("boot", "동의 대기 — 본 UI 렌더 보류");
+    return;
+  }
   bindEvents();
-  await Promise.all([renderParticipantId(), renderConsent(), renderSites(), renderEvents()]);
+  await Promise.all([
+    renderParticipantId(),
+    renderConsent(),
+    renderSites(),
+    renderEvents(),
+    renderUploadLog(),
+  ]);
   log.info("boot", "popup 렌더 완료");
 }
 

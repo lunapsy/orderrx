@@ -3,6 +3,7 @@
 
 import { createLogger } from "../logging/logger.js";
 import { getConsentState, getAllowedSites } from "../background/settings.js";
+import { hasValidConsent } from "../background/consent_record.js";
 
 const log = createLogger("content.guard");
 
@@ -15,6 +16,12 @@ export async function shouldCollect(): Promise<
 > {
   // 비교는 location.hostname 기준 (포트 제외). localhost:8765 같은 dev 환경에서도 매치되도록.
   log.debug("check", `hostname=${location.hostname}`);
+
+  // 단계 0: 참여 동의(CONSENT.md) 기록 확인 — 동의 없으면 토글 상태와 무관하게 전면 차단
+  if (!(await hasValidConsent())) {
+    log.info("block", "no valid consent record");
+    return { allowed: false, reason: "consent_not_agreed" };
+  }
 
   // 단계 1: consent 확인
   const consent = await getConsentState();

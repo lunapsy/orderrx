@@ -96,6 +96,53 @@ export async function countEvents(): Promise<number> {
 }
 
 /**
+ * event_time 오름차순으로 최대 limit건을 반환한다. 업로더의 배치 조회용.
+ * @param limit 최대 반환 개수
+ */
+export async function getEventsBatch(limit: number): Promise<Record<string, unknown>[]> {
+  const db = await openDb();
+  log.debug("get_batch", `limit=${limit}`);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).index("by_time").openCursor();
+    const out: Record<string, unknown>[] = [];
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (cursor && out.length < limit) {
+        out.push(cursor.value as Record<string, unknown>);
+        cursor.continue();
+      } else {
+        resolve(out);
+      }
+    };
+    req.onerror = () => {
+      log.error("get_batch_error", "배치 조회 실패", req.error);
+      reject(req.error);
+    };
+  });
+}
+
+/**
+ * event_id 목록에 해당하는 이벤트를 삭제한다. 업로드 성공분 정리용.
+ * @param eventIds 삭제할 event_id 배열
+ */
+export async function deleteEvents(eventIds: string[]): Promise<void> {
+  if (eventIds.length === 0) return;
+  const db = await openDb();
+  log.info("delete_batch", `${eventIds.length}건 삭제`);
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const store = tx.objectStore(STORE);
+    for (const id of eventIds) store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => {
+      log.error("delete_batch_error", "삭제 실패", tx.error);
+      reject(tx.error);
+    };
+  });
+}
+
+/**
  * 모든 이벤트를 삭제한다. popup의 "전체 삭제" 버튼에서 호출.
  */
 export async function clearEvents(): Promise<void> {
