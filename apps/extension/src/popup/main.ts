@@ -10,8 +10,10 @@ import {
   addAllowedSite,
   removeAllowedSite,
   toggleAllowedSite,
+  normalizeDomain,
   MAX_ALLOWED_SITES,
 } from "../background/settings.js";
+import { originsForDomain } from "../background/script_registry.js";
 import { countEvents, getAllEvents, clearEvents } from "../storage/indexed_db.js";
 import type { AllowedSite } from "../storage/chrome_storage.js";
 import {
@@ -67,6 +69,7 @@ async function renderSites(): Promise<void> {
     cb.addEventListener("change", async () => {
       await toggleAllowedSite(s.domain, cb.checked);
       log.info("toggled", s.domain);
+      await syncScripts();
     });
     const label = document.createElement("span");
     label.className = "site-domain";
@@ -75,6 +78,7 @@ async function renderSites(): Promise<void> {
     rm.textContent = "삭제";
     rm.addEventListener("click", async () => {
       await removeAllowedSite(s.domain);
+      await syncScripts();
       await renderSites();
     });
     row.appendChild(cb);
@@ -125,6 +129,35 @@ async function renderUploadLog(): Promise<void> {
 }
 
 /**
+ * 도메인들의 host permission을 요청한다 (반드시 사용자 제스처 컨텍스트에서 호출).
+ * 0.3.0부터 content script는 허가된 도메인에만 동적 주입되므로,
+ * 권한이 거부되면 해당 도메인에서는 수집이 불가능하다.
+ * @returns granted 여부
+ */
+async function requestSitePermissions(domains: string[]): Promise<boolean> {
+  const origins = domains.flatMap((d) => originsForDomain(d));
+  try {
+    const granted = await chrome.permissions.request({ origins });
+    log.info("perm_request", `granted=${granted} domains=${domains.join(",")}`);
+    return granted;
+  } catch (err) {
+    log.error("perm_request_fail", "권한 요청 실패", err);
+    return false;
+  }
+}
+
+/**
+ * background에 동적 content script 재동기화를 요청.
+ */
+async function syncScripts(): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({ type: "sync_scripts" });
+  } catch (err) {
+    log.error("sync_fail", "sync_scripts 메시지 실패", err);
+  }
+}
+
+/**
  * 도메인 목록 JSON 파일 다운로드.
  */
 function downloadJson(filename: string, data: unknown): void {
@@ -149,16 +182,27 @@ function bindEvents(): void {
     await renderConsent();
   });
 
-  // 도메인 추가
+  // 도메인 추가: 권한 요청(사용자 제스처) → 저장 → content script 동기화
   $("add-domain-btn").addEventListener("click", async () => {
     const input = $("new-domain") as HTMLInputElement;
     const v = input.value.trim();
     if (!v) return;
-    const ok = await addAllowedSite(v);
+    const domain = normalizeDomain(v);
+    if (!domain) {
+      alert("도메인 형식을 확인해 주세요.");
+      return;
+    }
+    const granted = await requestSitePermissions([domain]);
+    if (!granted) {
+      alert("사이트 접근 권한이 거부되어 이 도메인에서는 수집할 수 없습니다.");
+      return;
+    }
+    const ok = await addAllowedSite(domain);
     if (!ok) {
       alert(`도메인 추가 실패. 최대 ${MAX_ALLOWED_SITES}개까지 등록 가능합니다.`);
     }
     input.value = "";
+    await syncScripts();
     await renderSites();
   });
 
@@ -179,9 +223,19 @@ function bindEvents(): void {
       const text = await file.text();
       const parsed = JSON.parse(text) as AllowedSite[];
       if (!Array.isArray(parsed)) throw new Error("not an array");
-      for (const s of parsed) {
-        if (typeof s.domain === "string") await addAllowedSite(s.domain);
+      const domains = parsed
+        .filter((s) => typeof s.domain === "string")
+        .map((s) => normalizeDomain(s.domain))
+        .filter(Boolean);
+      if (domains.length === 0) throw new Error("no valid domains");
+      // 목록 전체 권한을 한 번의 제스처로 요청 (도메인별 반복 프롬프트 방지)
+      const granted = await requestSitePermissions(domains);
+      if (!granted) {
+        alert("사이트 접근 권한이 거부되어 가져오기를 중단합니다.");
+        return;
       }
+      for (const d of domains) await addAllowedSite(d);
+      await syncScripts();
       await renderSites();
     } catch (err) {
       log.error("import_fail", "파일 파싱 실패", err);

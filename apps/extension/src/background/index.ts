@@ -10,6 +10,7 @@ import { ensureParticipantId } from "./participant_id.js";
 import { putEvent } from "../storage/indexed_db.js";
 import { flushNow } from "./uploader.js";
 import { UPLOAD_PERIOD_MINUTES } from "./upload_config.js";
+import { syncContentScripts } from "./script_registry.js";
 
 const log = createLogger("background.index");
 
@@ -26,7 +27,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   void flushNow("alarm");
 });
 
-// 설치/업데이트 시 participant_id 보장
+// 설치/업데이트 시 participant_id 보장 + content script 등록 동기화
 chrome.runtime.onInstalled.addListener(async (details) => {
   log.info("on_installed", `reason=${details.reason}`);
   try {
@@ -35,6 +36,18 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   } catch (err) {
     log.error("on_installed", "participant_id 생성 실패", err);
   }
+  try {
+    await syncContentScripts();
+  } catch (err) {
+    log.error("on_installed", "content script 동기화 실패", err);
+  }
+});
+
+// 브라우저 기동 시에도 등록 상태 정합성 확인 (persistAcrossSessions 보완)
+chrome.runtime.onStartup.addListener(() => {
+  void syncContentScripts().catch((err) =>
+    log.error("on_startup", "content script 동기화 실패", err)
+  );
 });
 
 /**
@@ -43,6 +56,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
  *   - "ping"         : 헬스체크. {ok:true} 응답
  *   - "put_event"    : payload.event 를 IndexedDB에 저장. {ok, error?} 응답
  *   - "flush_upload" : 즉시 업로드 시도 (popup의 "지금 업로드" 버튼). {ok} 응답
+ *   - "sync_scripts" : 도메인 목록 변경 후 동적 content script 재동기화. {ok, count} 응답
  */
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   log.debug("on_message", `type=${msg?.type}`);
@@ -69,6 +83,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "flush_upload") {
     flushNow("manual")
       .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: String(err) }));
+    return true; // async sendResponse 사용
+  }
+
+  if (msg?.type === "sync_scripts") {
+    syncContentScripts()
+      .then((count) => sendResponse({ ok: true, count }))
       .catch((err) => sendResponse({ ok: false, error: String(err) }));
     return true; // async sendResponse 사용
   }
